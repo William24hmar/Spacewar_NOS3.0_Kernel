@@ -1,0 +1,58 @@
+name: NOS3.0
+on:
+  workflow_dispatch:
+    inputs:
+      enable_kernelsu_next:
+        description: 'Enable KernelSU Next?'
+        required: false
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc bison flex libssl-dev libelf-dev \
+            clang lld llvm binutils-aarch64-linux-gnu \
+            python3 zip curl wget
+
+      - name: Download Clang toolchain (r383902b1)
+        run: |
+          mkdir -p $HOME/tc/r383902b1
+          wget -q "https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/225d2925136a2268ac95a97db4e90d33043b18b9/clang-r383902b1.tar.gz" \
+            -O clang.tar.gz || \
+          wget -q "https://github.com/sohamxda7/llvm-stable/releases/download/r383902b1/clang-r383902b1.tar.gz" \
+            -O clang.tar.gz
+          tar -xf clang.tar.gz -C $HOME/tc/r383902b1
+          mkdir -p $HOME/tc/bin
+          ln -sf $HOME/tc/r383902b1/bin/* $HOME/tc/bin/
+          echo "$HOME/tc/r383902b1/bin" >> $GITHUB_PATH
+
+      - name: Verify Clang installation
+        run: |
+          $HOME/tc/r383902b1/bin/clang --version
+          $HOME/tc/r383902b1/bin/ld.lld --version
+
+      - name: Make build.sh executable
+        run: chmod +x build.sh
+
+      - name: Run build.sh
+        run: ./build.sh
+        env:
+          ENABLE_KERNELSU_NEXT: ${{ github.event.inputs.enable_kernelsu_next }}
+
+      - name: Upload all ZIP files as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Spacewar-zip
+          path: "**/*.zip"
