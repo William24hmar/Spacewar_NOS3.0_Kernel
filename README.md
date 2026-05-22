@@ -36,5 +36,6 @@
  [Chris Renshaw](https://github.com/osm0sis/AnyKernel3)
 - boot.img
  [Spike](https://github.com/spike0en/nothing_archive)
-- 非常感谢 [zerofrip](https://github.com/zerofrip) 对 Nothing Phone (1) 内核的适配与维护，为本项目打下了坚实基础。
+[`kimocoder/android_kernel_msm-5.4_nothing_sm7325`](https://github.com/kimocoder/android_kernel_msm-5.4_nothing_sm7325)  
+  非常感谢原作者 @kimocoder 对 Nothing Phone (1) 内核的适配与维护，为本项目打下了坚实基础。
 
