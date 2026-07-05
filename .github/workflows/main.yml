@@ -10,6 +10,20 @@ on:
         options:
           - 'yes'
           - 'no'
+      su_variant:
+        description: 'Root solution to inject (KernelSU / ReSukiSU / none)'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - 'none'
+          - 'KernelSU'
+          - 'ReSukiSU'
+      defconfig:
+        description: 'Defconfig filename under arch/arm64/configs/ (e.g. vendor/lahaina-qgki_defconfig)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build:
@@ -42,6 +56,43 @@ jobs:
         run: |
           $HOME/tc/r383902b1/bin/clang --version
           $HOME/tc/r383902b1/bin/ld.lld --version
+
+      - name: Setup root solution (KernelSU / ReSukiSU)
+        if: ${{ github.event.inputs.su_variant != 'none' }}
+        run: |
+          VARIANT="${{ github.event.inputs.su_variant }}"
+          DEFCONFIG_PATH="arch/arm64/configs/${{ github.event.inputs.defconfig }}"
+          echo "🔧 Root variant selected: $VARIANT"
+          if [ "$VARIANT" = "KernelSU" ]; then
+            echo "── KernelSU setup ──────────────────────────────────────────"
+            # Step 1: Run the official tiann KernelSU setup script
+            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
+            # Step 2: Remove the KernelSU folder created by the setup script
+            rm -rf KernelSU
+            # Step 3: Clone backslashxx's KernelSU fork (shockwave branch)
+            git clone -b master https://github.com/William24hmar/KernelSU.git
+            echo "✅ KernelSU (backslashxx/shockwave) ready"
+          elif [ "$VARIANT" = "ReSukiSU" ]; then
+            echo "── ReSukiSU setup ──────────────────────────────────────────"
+            # Step 1: Run the ReSukiSU setup script
+            curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -
+            # Step 2: Remove the KernelSU folder created by the setup script
+            rm -rf KernelSU
+            # Step 3: Clone Will ResukiSU fork (main branch) into the
+            # "KernelSU" folder name — this is the path the setup script's
+            # symlink (drivers/kernelsu) and Makefile/Kconfig patches
+            # already expect, so it must match exactly or the build
+            # can't find drivers/kernelsu/Kconfig.
+            git clone -b main https://github.com/William24hmar/ReSukiSU.git KernelSU
+            echo "✅ ReSukiSU (William24hmar/main) ready"
+          fi
+          # Inject CONFIG_KSU=y — shared by both variants
+          if [ -f "$DEFCONFIG_PATH" ]; then
+            echo "✅ Injecting CONFIG_KSU=y into defconfig ($DEFCONFIG_PATH)"
+            echo -e "\n# $VARIANT\nCONFIG_KSU=y" >> "$DEFCONFIG_PATH"
+          else
+            echo "⚠️  Defconfig not found at $DEFCONFIG_PATH — skipping CONFIG_KSU injection"
+          fi
 
       - name: Make build.sh executable
         run: chmod +x build.sh
