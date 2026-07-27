@@ -362,7 +362,6 @@ static __init int ksu_syscall_table_hook_init()
 	syscall_table_sucompat_enable();
 
 	read_and_replace_syscall((void *)&armeabi_reboot, __ARMEABI_reboot, (void *)hook_armeabi_reboot, (void *)sys_call_table);
-
 	read_and_replace_syscall((void *)&armeabi_fstat64, __ARMEABI_fstat64, (void *)hook_armeabi_fstat64_ret, (void *)sys_call_table);
 	read_and_replace_syscall((void *)&armeabi_read, __ARMEABI_read, (void *)hook_armeabi_read, (void *)sys_call_table);
 

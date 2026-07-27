@@ -101,12 +101,11 @@ static inline void ksu_grab_init_session_keyring() {} // no-op
 #define WRITE_ONCE(x, y) (*(volatile typeof(x) *)&(x) = (typeof(x))(y))
 #endif
 
-#ifndef __ro_after_init
-#define __ro_after_init
-#endif
-
-#ifndef __nocfi
-#define __nocfi
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 18, 0)
+__weak void memzero_explicit(void *s, size_t count)
+{
+	memset_explicit(s, 0, count);
+}
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
@@ -495,7 +494,7 @@ static inline void ksu_kfree_byref(void *buf) { kfree(*(void **)buf); }
 #if LINUX_VERSION_CODE < KERNEL_VERSION (3, 9, 0)
 // hashtable.h, list.h, rculist.h
 // ref: https://github.com/torvalds/linux/commit/b67bfe0d42cac56c512dd5da4b1b347a23f4b70a
-#include "linux_hashtable.h"
+#include "external/linux_hashtable.h"
 static inline int __must_check ksu_kref_get_unless_zero(struct kref *kref)
 { 
 	return atomic_add_unless(&kref->refcount, 1, 0); 

@@ -74,11 +74,16 @@
 #include "selinux/sepolicy.h"
 
 #ifdef CONFIG_KPROBES
-#include "kprobes_common.h"
+#include "downstream/kprobes_common.h"
+#endif
+
+#ifdef CONFIG_KALLSYMS
+#include "external/chibihash64.h"
+#include "downstream/kallsyms_common.h"
 #endif
 
 #ifdef CONFIG_ARM64
-#include "arm64_bl_insn.h"
+#include "downstream/arm64_bl_insn.h"
 #endif
 
 // unity build
@@ -135,6 +140,9 @@
 #endif /* CONFIG_KSU_TAMPER_SYSCALL_TABLE */
 
 #ifdef CONFIG_KSU_HACK_ARM64_BRANCH_LINK
+#undef syscall_table_sucompat_enable
+#undef syscall_table_sucompat_disable
+#include "hook/syscall_table_hook_arm64.c" // included as fallback
 #include "hook/branch_link_hook_arm64.c"
 #endif
 
@@ -252,6 +260,10 @@ static int __init kernelsu_init(void)
 	ksu_branch_link_patch_init();
 #endif
 
+// https://github.com/tiann/KernelSU/commit/fefb02e
+#if defined(MODULE) && !defined(CONFIG_KSU_DEBUG)
+	kobject_del(&THIS_MODULE->mkobj.kobj);
+#endif
 	return 0;
 }
 
